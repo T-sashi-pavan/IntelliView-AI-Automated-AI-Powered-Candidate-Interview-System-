@@ -1,0 +1,39 @@
+# Core / Root ignores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Backend (Node.js)
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/.env
+backend/uploads/
+backend/tmp/
+
+# Frontend (React/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# AI Service (Django/Python)
+ai_service/venv/
+ai_service/__pycache__/
+ai_service/*/ __pycache__/
+ai_service/*.py[cod]
+ai_service/*$py.class
+ai_service/.env
+ai_service/db.sqlite3
+ai_service/media/
+ai_service/static/
+
+# Other local tools/scripts
+/tmp/
+brain/
+.gemini/

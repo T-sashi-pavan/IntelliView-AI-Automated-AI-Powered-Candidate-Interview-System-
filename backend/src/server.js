@@ -22,9 +22,11 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+const ALLOWED_ORIGIN = (process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5174').replace(/\/$/, '');
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+    origin: ALLOWED_ORIGIN,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -34,7 +36,7 @@ const io = new Server(server, {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan('dev'));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+  origin: ALLOWED_ORIGIN,
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));

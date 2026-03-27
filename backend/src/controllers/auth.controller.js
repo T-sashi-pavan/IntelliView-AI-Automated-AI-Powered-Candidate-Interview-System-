@@ -121,18 +121,19 @@ export const resetPassword = async (req, res) => {
 };
 
 export const googleCallback = async (req, res) => {
+  const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5174').replace(/\/$/, '');
   try {
     if (!req.user) {
-      return res.redirect(`${process.env.FRONTEND_URL}/signin?error=no_user`);
+      return res.redirect(`${FRONTEND_URL}/signin?error=no_user`);
     }
     const { accessToken, refreshToken } = generateTokens(req.user._id);
     res.cookie('accessToken', accessToken, cookieOptions);
     res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${accessToken}&role=${req.user.role}`;
+    const redirectUrl = `${FRONTEND_URL}/auth/callback?token=${accessToken}&role=${req.user.role}`;
     return res.redirect(redirectUrl);
   } catch (err) {
     console.error('googleCallback error:', err);
-    return res.redirect(`${process.env.FRONTEND_URL}/signin?error=callback_failed`);
+    return res.redirect(`${FRONTEND_URL}/signin?error=callback_failed`);
   }
 };
 

@@ -26,13 +26,14 @@ router.get('/google', passport.authenticate('google', {
 // Google OAuth — callback using custom callback for full error control
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
+    const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5174').replace(/\/$/, '');
     if (err) {
       console.error('Google OAuth error:', err);
-      return res.redirect(`${process.env.FRONTEND_URL}/signin?error=oauth_error`);
+      return res.redirect(`${FRONTEND_URL}/signin?error=oauth_error`);
     }
     if (!user) {
       console.warn('Google OAuth no user:', info);
-      return res.redirect(`${process.env.FRONTEND_URL}/signin?error=oauth_failed`);
+      return res.redirect(`${FRONTEND_URL}/signin?error=oauth_failed`);
     }
     req.user = user;
     return googleCallback(req, res, next);

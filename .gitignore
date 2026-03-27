@@ -1,0 +1,21 @@
+node_modules/
+.env
+dist/
+build/
+ out/
+frontend/dist/
+frontend/build/
+
+# Dependency directories
+backend/node_modules/
+frontend/node_modules/
+.env
+# Python / Django Environment
+env/
+venv/
+ai_service/venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.md
+.sqlite3

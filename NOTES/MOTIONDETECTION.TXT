@@ -1,0 +1,219 @@
+DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎯 Motion Detection System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            text-shadow: 1px 1px 3px black;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* ✅ Wrap the video area for relative positioning */
+        .video-container {
+            position: relative;
+            display: inline-block;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 10px;
+            max-width: 90%;
+        }
+
+        /* ✅ Alert positioned inside video area */
+        .motion-alert {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 255, 0, 0.25);
+            color: #00ff00;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            display: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+            z-index: 2;
+        }
+
+        .stats {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .stat-item {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        button {
+            margin: 15px;
+            padding: 10px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #4caf50, #81c784);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🎯 Motion Detection System</h1>
+        <p>AI-Powered Human Detection (Client-side, Privacy Safe)</p>
+    </header>
+
+    <main>
+        <div class="video-container">
+            <div class="motion-alert" id="motionAlert">⚡ Motion Detected!</div>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button id="start">Start Detection</button>
+            <button id="stop" disabled>Stop Detection</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item"><strong>👥 People Detected:</strong> <span id="peopleCount">0</span></div>
+            <div class="stat-item"><strong>📸 Frames:</strong> <span id="frameCount">0</span></div>
+            <div class="stat-item"><strong>⚡ Intensity:</strong> <span id="motionIntensity">0</span></div>
+        </div>
+    </main>
+
+    <!-- ✅ TensorFlow.js + COCO SSD Model -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const startBtn = document.getElementById("start");
+        const stopBtn = document.getElementById("stop");
+        const motionAlert = document.getElementById("motionAlert");
+
+        const peopleCountEl = document.getElementById("peopleCount");
+        const frameCountEl = document.getElementById("frameCount");
+        const motionIntensityEl = document.getElementById("motionIntensity");
+
+        let model = null;
+        let isDetecting = false;
+        let frameCount = 0;
+        let stream = null;
+        let video = document.createElement("video");
+
+        async function setupCamera() {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.play();
+            await new Promise((resolve) => (video.onloadedmetadata = resolve));
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        }
+
+        async function startDetection() {
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            if (!model) {
+                model = await cocoSsd.load();
+            }
+
+            await setupCamera();
+            isDetecting = true;
+            detectFrame();
+        }
+
+        function stopDetection() {
+            isDetecting = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            if (stream) stream.getTracks().forEach((t) => t.stop());
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            motionAlert.style.display = "none";
+        }
+
+        async function detectFrame() {
+            if (!isDetecting) return;
+
+            frameCount++;
+            frameCountEl.textContent = frameCount;
+
+            const predictions = await model.detect(video);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const people = predictions.filter((p) => p.class === "person" && p.score > 0.5);
+            peopleCountEl.textContent = people.length;
+            motionIntensityEl.textContent = Math.min(100, Math.round(people.length * 25));
+
+            if (people.length > 0) {
+                motionAlert.style.display = "block";
+            } else {
+                motionAlert.style.display = "none";
+            }
+
+            people.forEach((person, i) => {
+                const [x, y, w, h] = person.bbox;
+                ctx.strokeStyle = "#00FF00";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x, y, w, h);
+                ctx.fillStyle = "rgba(0,0,0,0.6)";
+                ctx.fillRect(x, y - 25, 120, 20);
+                ctx.fillStyle = "#00FF00";
+                ctx.font = "14px Arial";
+                ctx.fillText(`Person ${i + 1}`, x + 5, y - 10);
+            });
+
+            requestAnimationFrame(detectFrame);        }
+
+        startBtn.addEventListener("click", startDetection);
+        stopBtn.addEventListener("click", stopDetection);
+    </script>
+</body>
+
+</html>
+-

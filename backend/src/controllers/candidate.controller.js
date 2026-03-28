@@ -158,6 +158,19 @@ export const getSessionResult = async (req, res) => {
       .populate('interview', 'title jobDescription requiredSkills')
       .populate('candidate', 'name email avatar');
     if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
+
+    // If it's a formal interview (has a recruiter) and results aren't granted yet, block access
+    if (session.recruiter && !session.resultGranted && session.candidate.toString() !== req.user._id.toString()) {
+       // Allow recruiter to see it always, but candidate only if granted
+    }
+    
+    // Check if the current user is the candidate and if they have access
+    if (session.candidate._id.toString() === req.user._id.toString()) {
+      if (session.recruiter && !session.resultGranted) {
+        return res.status(403).json({ success: false, message: 'Result access has not been granted by the recruiter yet.' });
+      }
+    }
+
     return res.json({ success: true, session });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -166,7 +179,17 @@ export const getSessionResult = async (req, res) => {
 
 export const getMySessions = async (req, res) => {
   try {
-    const sessions = await Session.find({ candidate: req.user._id })
+    // Return all sessions for the candidate, but for recruiter-led ones, only if resultGranted is true
+    // Or maybe show them all but mark as "Pending" in frontend? 
+    // The user specifically said "SEND ... RESULTS TO TEH MY RESULTS PAGE", implying they appear there when granted.
+    const sessions = await Session.find({ 
+      candidate: req.user._id,
+      $or: [
+        { recruiter: { $exists: false } }, // Mock sessions (if any in MongoDB)
+        { resultGranted: true },           // Granted formal sessions
+        { status: { $ne: 'completed' } }   // Still in-progress sessions (optional)
+      ]
+    })
       .populate('interview', 'title jobDescription')
       .sort({ createdAt: -1 });
     return res.json({ success: true, sessions });

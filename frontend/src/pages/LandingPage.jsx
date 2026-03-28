@@ -1,14 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 import useAuthStore from '../store/authStore';
 import {
   Brain, Zap, FileSearch, BarChart3, Mic, Plus,
   Star, ArrowRight, Menu, X, CheckCircle
 } from 'lucide-react';
 
-// Lazy load Beams to avoid SSR issues
-import { lazy } from 'react';
-const Beams = lazy(() => import('../components/Beams'));
+import Threads from '../components/Threads';
 
 const features = [
   { icon: Brain, title: 'Adaptive AI Interviews', desc: 'AI dynamically adjusts questions based on candidate responses and resume for smarter evaluation.', color: '#6366f1' },
@@ -83,21 +81,17 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* HERO with Beams background */}
-      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Beams WebGL background */}
-        <Suspense fallback={<div style={{ position: 'absolute', inset: 0, background: 'var(--gradient-hero)' }} />}>
-          <Beams
-            beamWidth={3}
-            beamHeight={30}
-            beamNumber={15}
-            lightColor="#818cf8"
-            speed={1.5}
-            noiseIntensity={1.5}
-            scale={0.2}
-            rotation={30}
+      {/* HERO with Threads background */}
+      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', minHeight: '90vh' }}>
+        {/* Threads shader background */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <Threads
+            amplitude={1.2}
+            distance={0.2}
+            enableMouseInteraction={true}
+            color={[0.23, 0.51, 0.96]} // #3b82f6 blue
           />
-        </Suspense>
+        </div>
 
         {/* Dark overlay for readability */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(7,11,20,0.92) 0%, rgba(7,11,20,0.7) 50%, rgba(7,11,20,0.92) 100%)', zIndex: 1 }} />

@@ -459,61 +459,24 @@ export default function RealInterviewRoom() {
             <span style={{ color: 'var(--accent-blue-light)', fontWeight: 700 }}> {sessionData.jobRole}</span>
           </h3>
 
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 32, fontSize: '0.95rem' }}>
-            Your responses have been recorded and will be evaluated by the recruiter.
-            You will be contacted shortly regarding the next steps in the hiring process.
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 40, fontSize: '1rem' }}>
+            Your interview data and proctoring report have been submitted successfully. 
+            The recruiter will review your performance and release your detailed report soon.
+            Check your <strong>Notifications</strong> or <strong>My Results</strong> page for updates.
           </p>
 
-          {/* Summary stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 36 }}>
-            {[
-              { label: 'Questions Answered', value: sessionData.questions.filter(q => q.isAnswered).length },
-              { label: 'Total Questions', value: sessionData.totalQuestions },
-              { label: 'Status', value: '✓ Submitted', color: 'var(--accent-green)' },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 700, color: color || 'var(--accent-blue-light)' }}>{value}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 40 }}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 16px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Session Status</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-green)' }}>✓ COMPLETED</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '24px 16px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Questions</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-blue-light)' }}>
+                {sessionData.questions.filter(q => q.isAnswered).length} / {sessionData.totalQuestions}
               </div>
-            ))}
+            </div>
           </div>
-
-          {/* AI report summary (strengths/improvements — no score) */}
-          {loadingReport && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <div className="spinner" style={{ width: 18, height: 18 }} /> Generating your session summary...
-            </div>
-          )}
-          {finalReport && !loadingReport && (
-            <div className="glass-card" style={{ padding: 28, marginBottom: 28, textAlign: 'left' }}>
-              <h4 style={{ marginBottom: 16, fontSize: '1rem' }}>📋 Personal Session Summary</h4>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 20 }}>
-                {finalReport.overallSummary}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <h5 style={{ fontSize: '0.8rem', color: 'var(--accent-green)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <TrendingUp size={14} /> Strengths
-                  </h5>
-                  <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-                    {(finalReport.strengths || []).slice(0, 3).map((s, i) => (
-                      <li key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>• {s}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h5 style={{ fontSize: '0.8rem', color: '#fbbf24', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <TrendingDown size={14} /> Improvements
-                  </h5>
-                  <ul style={{ padding: 0, margin: 0, listStyle: 'none' }}>
-                    {(finalReport.improvements || []).slice(0, 3).map((s, i) => (
-                      <li key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8 }}>• {s}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <button className="btn btn-ghost" style={{ flex: 1, maxWidth: 200 }} onClick={() => navigate('/candidate/explore')}>

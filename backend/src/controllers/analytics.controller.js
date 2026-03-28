@@ -1,6 +1,7 @@
 import Session from '../models/session.model.js';
 import Interview from '../models/interview.model.js';
 import User from '../models/user.model.js';
+import { sendResultGrantedEmail } from '../services/email.service.js';
 
 export const getRecruiterAnalytics = async (req, res) => {
   try {
@@ -153,6 +154,13 @@ export const grantResult = async (req, res) => {
         score: session.overallScore,
         interviewTitle: session.interview?.title,
       });
+    }
+
+    // SEND EMAIL TO CANDIDATE
+    try {
+      await sendResultGrantedEmail(session.candidate.email, session.candidate.name, session.interview?.title || 'Personal Interview');
+    } catch (emailErr) {
+      console.warn('Result grant email failed:', emailErr.message);
     }
 
     return res.json({ success: true, message: 'Result access granted to candidate.' });

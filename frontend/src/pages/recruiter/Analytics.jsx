@@ -142,11 +142,11 @@ export default function RecruiterAnalytics() {
             ) : (
               <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
                 {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 120px 190px', gap: 0, padding: '12px 20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
-                  <div>Rank</div><div>Candidate</div><div>Email</div><div>Score</div><div>Completed</div><div style={{ textAlign: 'center' }}>Result Access</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 100px 120px 160px', gap: 0, padding: '12px 20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                  <div>Rank</div><div>Candidate</div><div>Email</div><div>Score</div><div>Status</div><div>Completed</div><div style={{ textAlign: 'center' }}>Result Access</div>
                 </div>
                 {selectedRole.candidates.map((c) => (
-                  <div key={c.sessionId || c.candidateId} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 120px 190px', gap: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s' }}
+                  <div key={c.sessionId || c.candidateId} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 100px 120px 160px', gap: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -163,6 +163,11 @@ export default function RecruiterAnalytics() {
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.email}</div>
                     <div>
                       <span style={{ fontWeight: 700, fontSize: '1.1rem', color: getScoreColor(c.score) }}>{c.score}%</span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: 20, background: c.score > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: c.score > 0 ? '#10b981' : '#f87171', border: `1px solid ${c.score > 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+                        {c.score > 0 ? 'Completed' : 'Terminated'}
+                      </span>
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {c.completedAt ? new Date(c.completedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}

@@ -96,3 +96,23 @@ export const sendAccessRequestStatus = async (email, name, interviewTitle, statu
   });
 };
 
+export const sendResultGrantedEmail = async (email, name, interviewTitle) => {
+  const resultsUrl = `${process.env.FRONTEND_URL}/candidate/my-results`;
+  await transporter.sendMail({
+    from: process.env.SENDER_EMAIL || 'InterviewAI <noreply@interviewai.com>',
+    to: email,
+    subject: `Interview Results Ready: ${interviewTitle}`,
+    html: `
+      <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #e2e8f0; padding: 40px; border-radius: 16px; text-align: center;">
+        <div style="font-size: 40px; margin-bottom: 20px;">📊</div>
+        <h1 style="color: #60a5fa; margin-bottom: 16px;">Good news, ${name}!</h1>
+        <p style="font-size: 16px; line-height: 1.6; color: #cbd5e1;">Your performance report for the <strong>${interviewTitle}</strong> interview has been released by the recruiter.</p>
+        <p style="font-size: 16px; line-height: 1.6; color: #cbd5e1; margin-bottom: 24px;">You can now view your scores, detailed strengths, and areas for improvement on your dashboard.</p>
+        <a href="${resultsUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #6366f1); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          View My Results
+        </a>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 32px;">Best regards,<br/>The InterviewAI Team</p>
+      </div>
+    `,
+  });
+};

@@ -115,6 +115,26 @@ const BeamsInner = ({
   rotation = 0
 }) => {
   const meshRef = useRef(null);
+  const groupRef = useRef(null);
+  const mouse = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouse = (e) => {
+      mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener('mousemove', handleMouse);
+    return () => window.removeEventListener('mousemove', handleMouse);
+  }, []);
+
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      // Subtle hover response
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, mouse.current.x * 0.1, 0.05);
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -mouse.current.y * 0.1, 0.05);
+    }
+  });
+
   const beamMaterial = useMemo(
     () =>
       extendMaterial(THREE.MeshStandardMaterial, {
@@ -172,7 +192,7 @@ const BeamsInner = ({
   );
 
   return (
-    <group rotation={[0, 0, degToRad(rotation)]}>
+    <group ref={groupRef} rotation={[0, 0, degToRad(rotation)]}>
       <PlaneNoise ref={meshRef} material={beamMaterial} count={beamNumber} width={beamWidth} height={beamHeight} />
       <DirLight color={lightColor} position={[0, 3, 10]} />
     </group>

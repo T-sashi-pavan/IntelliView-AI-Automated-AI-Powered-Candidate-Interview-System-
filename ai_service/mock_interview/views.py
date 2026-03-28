@@ -162,14 +162,27 @@ class StartRealInterviewView(APIView):
         if not job_role:
             return Response({'message': 'Missing job role'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Build enriched resume context for question generation
-        skills_str = ', '.join(required_skills) if required_skills else ''
+        stipend = request.data.get('stipend', '')
+        work_mode = request.data.get('workMode', '')
+        location = request.data.get('location', '')
+        employment_type = request.data.get('employmentType', '')
+        application_deadline = request.data.get('applicationDeadline', '')
+
+        # Build enriched resume context — ALL job details stored so AI can answer candidate questions accurately
+        skills_str = ', '.join(required_skills) if required_skills else 'Not specified'
         enriched_context = f"""
+=== JOB POSTING DETAILS ===
 Job Role: {job_role}
-Job Description: {job_description[:500]}
+Job Description: {job_description or 'Not provided'}
 Required Skills: {skills_str}
-Experience Level: {experience}
-Candidate Resume:
+Experience Level: {experience or 'Not specified'}
+Work Mode: {work_mode or 'Not specified'}
+Location: {location or 'Not specified'}
+Employment Type: {employment_type or 'Not specified'}
+Stipend / Salary: {stipend or 'Not specified'}
+Application Deadline: {application_deadline or 'Not specified'}
+
+=== CANDIDATE RESUME ===
 {resume_text[:2000] if resume_text else 'No resume provided. Ask general role-related questions.'}
 """
 
@@ -327,15 +340,24 @@ Return JSON: {{"question": "Next question here"}}
 
             # If we are here, we are ALREADY in the wrap-up/feedback phase and answering a wrap-up question
             if user_asking_questions:
-                # PROLONG: Answer user questions and ask if they have more
-                prolong_prompt = f"""The candidate has asked questions or provided feedback during the wrap-up of their interview for {session.job_role}.
-Question/Feedback: {answer_text}
+                # PROLONG: Answer user questions using real job context
+                prolong_prompt = f"""You are an AI interviewer representing the company hiring for: {session.job_role}.
 
-Respond professionally, answering their questions about the role or AI-driven platform.
-Then ask a follow-up: "Do you have any more questions or feedback, or are we ready to conclude the session?"
-Be conversational.
+The candidate has asked a question or provided feedback during the wrap-up phase.
+Candidate input: "{answer_text}"
 
-Return JSON: {{"question": "Your response and follow-up question here"}}
+JOB CONTEXT (use this to answer questions accurately):
+{session.resume_text[:2000]}
+
+STRICT RULES:
+1. If the candidate asks about stipend/salary, work mode, location, skills required, job duration, or any specific job detail — answer ONLY using the JOB CONTEXT above.
+2. If the detail is clearly mentioned in the context, state it directly.
+3. If the detail is NOT mentioned in the context, say: "That specific detail hasn't been shared with me, but you can confirm it directly with the recruiter."
+4. Do NOT make up or guess any job details.
+5. Be professional, warm, and concise.
+6. End by asking: "Do you have any other questions, or shall we conclude the interview?"
+
+Return JSON: {{"question": "Your professional response here"}}
 """
                 prolong_comp = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",

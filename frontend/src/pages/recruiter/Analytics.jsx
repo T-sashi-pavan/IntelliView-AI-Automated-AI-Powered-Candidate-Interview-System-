@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import api from '../../services/api';
-import { BarChart3, TrendingUp, Users, Award, Trophy, ChevronRight, ArrowLeft } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Award, Trophy, ChevronRight, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell
@@ -14,6 +15,11 @@ export default function RecruiterAnalytics() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [grantLoading, setGrantLoading] = useState({});
+
+  const refreshLeaderboard = () => {
+    api.get('/analytics/leaderboard').then(l => setLeaderboard(l.data.leaderboard || []));
+  };
 
   useEffect(() => {
     Promise.all([
@@ -55,6 +61,57 @@ export default function RecruiterAnalytics() {
     return '#ef4444';
   };
 
+  const handleGrant = async (sessionId) => {
+    setGrantLoading(prev => ({ ...prev, [sessionId]: 'granting' }));
+    try {
+      await api.post('/analytics/grant-result', { sessionId });
+      toast.success('Result granted to candidate!');
+      // Update local state
+      setLeaderboard(prev => prev.map(role => ({
+        ...role,
+        candidates: role.candidates.map(c =>
+          c.sessionId === sessionId ? { ...c, resultGranted: true } : c
+        )
+      })));
+      if (selectedRole) {
+        setSelectedRole(prev => ({
+          ...prev,
+          candidates: prev.candidates.map(c =>
+            c.sessionId === sessionId ? { ...c, resultGranted: true } : c
+          )
+        }));
+      }
+    } catch (e) {
+      toast.error('Failed to grant result.');
+    }
+    setGrantLoading(prev => ({ ...prev, [sessionId]: null }));
+  };
+
+  const handleRevoke = async (sessionId) => {
+    setGrantLoading(prev => ({ ...prev, [sessionId]: 'revoking' }));
+    try {
+      await api.post('/analytics/revoke-result', { sessionId });
+      toast.success('Result access revoked.');
+      setLeaderboard(prev => prev.map(role => ({
+        ...role,
+        candidates: role.candidates.map(c =>
+          c.sessionId === sessionId ? { ...c, resultGranted: false } : c
+        )
+      })));
+      if (selectedRole) {
+        setSelectedRole(prev => ({
+          ...prev,
+          candidates: prev.candidates.map(c =>
+            c.sessionId === sessionId ? { ...c, resultGranted: false } : c
+          )
+        }));
+      }
+    } catch (e) {
+      toast.error('Failed to revoke result.');
+    }
+    setGrantLoading(prev => ({ ...prev, [sessionId]: null }));
+  };
+
   return (
     <DashboardLayout role="recruiter" title="Analytics" subtitle="Comprehensive insights into your interview performance">
       <div className="dashboard-page">
@@ -85,11 +142,11 @@ export default function RecruiterAnalytics() {
             ) : (
               <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
                 {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr 100px 140px', gap: 0, padding: '12px 24px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
-                  <div>Rank</div><div>Candidate</div><div>Email</div><div>Score</div><div>Completed</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 120px 190px', gap: 0, padding: '12px 20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                  <div>Rank</div><div>Candidate</div><div>Email</div><div>Score</div><div>Completed</div><div style={{ textAlign: 'center' }}>Result Access</div>
                 </div>
                 {selectedRole.candidates.map((c) => (
-                  <div key={c.candidateId} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr 100px 140px', gap: 0, padding: '14px 24px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s' }}
+                  <div key={c.sessionId || c.candidateId} style={{ display: 'grid', gridTemplateColumns: '50px 1fr 1fr 90px 120px 190px', gap: 0, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -109,6 +166,30 @@ export default function RecruiterAnalytics() {
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {c.completedAt ? new Date(c.completedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                    </div>
+                    {/* Grant / Revoke */}
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      {c.resultGranted ? (
+                        <button
+                          className="btn btn-sm"
+                          disabled={grantLoading[c.sessionId] === 'revoking'}
+                          onClick={() => handleRevoke(c.sessionId)}
+                          style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '0.75rem', gap: 4, padding: '5px 10px' }}
+                        >
+                          <XCircle size={13} />
+                          {grantLoading[c.sessionId] === 'revoking' ? 'Revoking…' : 'Revoke'}
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-sm"
+                          disabled={grantLoading[c.sessionId] === 'granting'}
+                          onClick={() => handleGrant(c.sessionId)}
+                          style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399', fontSize: '0.75rem', gap: 4, padding: '5px 10px' }}
+                        >
+                          <CheckCircle size={13} />
+                          {grantLoading[c.sessionId] === 'granting' ? 'Granting…' : 'Grant'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -51,6 +51,11 @@ export default function AttendInterview() {
           questions: interview.numberOfQuestions || 5,
           timeLimit: interview.timePerQuestion || 180,
           requiredSkills: interview.requiredSkills || [],
+          stipend: interview.stipend || '',
+          workMode: interview.workMode || '',
+          location: interview.location || '',
+          employmentType: interview.employmentType || '',
+          applicationDeadline: interview.applicationDeadline || '',
           resumeText,
         }),
       });

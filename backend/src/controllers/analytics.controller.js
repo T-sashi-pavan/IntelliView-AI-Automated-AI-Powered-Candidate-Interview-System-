@@ -97,7 +97,7 @@ export const getLeaderboard = async (req, res) => {
     const leaderboard = await Promise.all(interviews.map(async (intv) => {
       const sessions = await Session.find({ interview: intv._id, status: 'completed' })
         .populate('candidate', 'name email avatar')
-        .select('candidate overallScore completedAt')
+        .select('candidate overallScore completedAt resultGranted')
         .sort({ overallScore: -1 });
       return {
         interviewId: intv._id,
@@ -106,12 +106,14 @@ export const getLeaderboard = async (req, res) => {
         avgScore: sessions.length > 0 ? Math.round(sessions.reduce((s, x) => s + x.overallScore, 0) / sessions.length) : 0,
         candidates: sessions.map((s, i) => ({
           rank: i + 1,
+          sessionId: s._id,
           candidateId: s.candidate?._id,
           name: s.candidate?.name,
           email: s.candidate?.email,
           avatar: s.candidate?.avatar,
           score: s.overallScore,
           completedAt: s.completedAt,
+          resultGranted: s.resultGranted,
         }))
       };
     }));
@@ -119,6 +121,65 @@ export const getLeaderboard = async (req, res) => {
     return res.json({ success: true, leaderboard });
   } catch (err) {
     console.error('Leaderboard error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// Grant result access to candidate
+export const grantResult = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const session = await Session.findById(sessionId)
+      .populate('candidate', 'name email')
+      .populate('interview', 'title');
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
+
+    // Verify recruiter owns this session
+    if (session.recruiter.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    session.resultGranted = true;
+    session.resultGrantedAt = new Date();
+    await session.save();
+
+    // Send in-app notification to candidate
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${session.candidate._id}`).emit('notification', {
+        type: 'result_granted',
+        message: `Your results for "${session.interview?.title || 'Interview'}" are now available in My Results!`,
+        sessionId: session._id,
+        score: session.overallScore,
+        interviewTitle: session.interview?.title,
+      });
+    }
+
+    return res.json({ success: true, message: 'Result access granted to candidate.' });
+  } catch (err) {
+    console.error('Grant result error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// Revoke result access from candidate
+export const revokeResult = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const session = await Session.findById(sessionId).populate('interview', 'title');
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
+
+    if (session.recruiter.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    session.resultGranted = false;
+    session.resultGrantedAt = undefined;
+    await session.save();
+
+    return res.json({ success: true, message: 'Result access revoked.' });
+  } catch (err) {
+    console.error('Revoke result error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow-models/face-landmarks-detection": "^1.0.6",
     "@tensorflow/tfjs": "^4.22.0",
@@ -25,6 +27,7 @@
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.0",
     "socket.io-client": "^4.8.3",
+    "three": "^0.183.2",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

@@ -30,6 +30,8 @@ const sessionSchema = new mongoose.Schema({
   resumeSnapshot: { type: String, default: '' },
   currentQuestionIndex: { type: Number, default: 0 },
   socketRoomId: String,
+  resultGranted: { type: Boolean, default: false },
+  resultGrantedAt: Date,
 }, { timestamps: true });
 
 export default mongoose.model('Session', sessionSchema);

@@ -25,6 +25,7 @@ import InterviewRoom from './pages/candidate/InterviewRoom';
 import Results from './pages/candidate/Results';
 import MyResults from './pages/candidate/MyResults';
 import Profile from './pages/shared/Profile';
+import RealInterviewRoom from './pages/candidate/RealInterviewRoom';
 
 // Guards
 const PrivateRoute = ({ children, role }) => {
@@ -73,6 +74,7 @@ export default function App() {
       <Route path="/candidate/mock-room/:sessionId" element={<PrivateRoute role="candidate"><MockRoom /></PrivateRoute>} />
       <Route path="/candidate/attend" element={<PrivateRoute role="candidate"><AttendInterview /></PrivateRoute>} />
       <Route path="/candidate/interview/:sessionId" element={<PrivateRoute role="candidate"><InterviewRoom /></PrivateRoute>} />
+      <Route path="/candidate/real-interview/:sessionId" element={<PrivateRoute role="candidate"><RealInterviewRoom /></PrivateRoute>} />
       <Route path="/candidate/results/:sessionId" element={<PrivateRoute role="candidate"><Results /></PrivateRoute>} />
       <Route path="/candidate/my-results" element={<PrivateRoute role="candidate"><MyResults /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />

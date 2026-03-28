@@ -89,3 +89,36 @@ export const getCandidateAnalytics = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+export const getLeaderboard = async (req, res) => {
+  try {
+    const recruiterId = req.user._id;
+    const interviews = await Interview.find({ recruiter: recruiterId }).select('_id title');
+    
+    const leaderboard = await Promise.all(interviews.map(async (intv) => {
+      const sessions = await Session.find({ interview: intv._id, status: 'completed' })
+        .populate('candidate', 'name email avatar')
+        .select('candidate overallScore completedAt')
+        .sort({ overallScore: -1 });
+      return {
+        interviewId: intv._id,
+        title: intv.title,
+        totalCandidates: sessions.length,
+        avgScore: sessions.length > 0 ? Math.round(sessions.reduce((s, x) => s + x.overallScore, 0) / sessions.length) : 0,
+        candidates: sessions.map((s, i) => ({
+          rank: i + 1,
+          candidateId: s.candidate?._id,
+          name: s.candidate?.name,
+          email: s.candidate?.email,
+          avatar: s.candidate?.avatar,
+          score: s.overallScore,
+          completedAt: s.completedAt,
+        }))
+      };
+    }));
+    
+    return res.json({ success: true, leaderboard });
+  } catch (err) {
+    console.error('Leaderboard error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};

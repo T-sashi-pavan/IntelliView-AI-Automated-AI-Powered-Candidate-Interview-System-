@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import api from '../../services/api';
-import { BarChart3, TrendingUp, Users, Award } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Award, Trophy, ChevronRight, ArrowLeft } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, Cell
+  Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 
 const COLORS = ['#3b82f6', '#6366f1', '#22d3ee', '#10b981', '#f59e0b'];
 
 export default function RecruiterAnalytics() {
   const [analytics, setAnalytics] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/analytics/recruiter').then(r => {
-      setAnalytics(r.data);
+    Promise.all([
+      api.get('/analytics/recruiter'),
+      api.get('/analytics/leaderboard'),
+    ]).then(([a, l]) => {
+      setAnalytics(a.data);
+      setLeaderboard(l.data.leaderboard || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -36,6 +41,20 @@ export default function RecruiterAnalytics() {
     return null;
   };
 
+  const getMedalColor = (rank) => {
+    if (rank === 1) return '#f59e0b';
+    if (rank === 2) return '#94a3b8';
+    if (rank === 3) return '#a87c5b';
+    return 'rgba(255,255,255,0.08)';
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'var(--accent-green)';
+    if (score >= 60) return 'var(--accent-blue-light)';
+    if (score >= 40) return 'var(--accent-orange)';
+    return '#ef4444';
+  };
+
   return (
     <DashboardLayout role="recruiter" title="Analytics" subtitle="Comprehensive insights into your interview performance">
       <div className="dashboard-page">
@@ -43,7 +62,61 @@ export default function RecruiterAnalytics() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
             <div className="spinner" style={{ width: 48, height: 48 }} />
           </div>
+        ) : selectedRole ? (
+          /* ── Per-Role Leaderboard Detail ─────────────────── */
+          <div className="animate-fade">
+            <button className="btn btn-ghost btn-sm" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => setSelectedRole(null)}>
+              <ArrowLeft size={16} /> Back to Analytics
+            </button>
+            <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trophy size={22} color="#f59e0b" />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }}>{selectedRole.title}</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{selectedRole.totalCandidates} candidate{selectedRole.totalCandidates !== 1 ? 's' : ''} · Avg score: <strong style={{ color: 'var(--accent-blue-light)' }}>{selectedRole.avgScore}%</strong></p>
+                </div>
+              </div>
+            </div>
+
+            {selectedRole.candidates.length === 0 ? (
+              <div className="empty-state"><p>No candidates have completed this interview yet.</p></div>
+            ) : (
+              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                {/* Table header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr 100px 140px', gap: 0, padding: '12px 24px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-primary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                  <div>Rank</div><div>Candidate</div><div>Email</div><div>Score</div><div>Completed</div>
+                </div>
+                {selectedRole.candidates.map((c) => (
+                  <div key={c.candidateId} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr 100px 140px', gap: 0, padding: '14px 24px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center', transition: 'background 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: getMedalColor(c.rank), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: c.rank <= 3 ? '#000' : 'var(--text-primary)' }}>
+                        {c.rank}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div className="avatar" style={{ width: 34, height: 34, fontSize: '0.85rem', flexShrink: 0 }}>
+                        {c.avatar ? <img src={c.avatar} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : (c.name?.[0] || '?')}
+                      </div>
+                      <span style={{ fontWeight: 500 }}>{c.name || 'Unknown'}</span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.email}</div>
+                    <div>
+                      <span style={{ fontWeight: 700, fontSize: '1.1rem', color: getScoreColor(c.score) }}>{c.score}%</span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {c.completedAt ? new Date(c.completedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
+          /* ── Main Analytics Dashboard ─────────────────────── */
           <>
             <div className="stats-grid" style={{ marginBottom: 24 }}>
               {[
@@ -98,15 +171,58 @@ export default function RecruiterAnalytics() {
               </div>
             </div>
 
-            {/* Top performers from recent sessions */}
+            {/* Leaderboard by Job Role */}
+            <div className="chart-card" style={{ marginBottom: 'var(--space-xl)' }}>
+              <div className="chart-header">
+                <div className="chart-title">🏆 Leaderboard by Job Role</div>
+                <Trophy size={18} color="#f59e0b" />
+              </div>
+              {leaderboard.length === 0 ? (
+                <div className="empty-state"><p>No interview data yet. Run some interviews first.</p></div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, marginTop: 4 }}>
+                  {leaderboard.map((role) => (
+                    <div key={role.interviewId} className="glass-card" style={{ padding: '18px 20px', cursor: 'pointer', border: '1px solid rgba(59,130,246,0.1)', transition: 'all 0.2s' }}
+                      onClick={() => setSelectedRole(role)}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.1)'; e.currentTarget.style.transform = 'none'; }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <h4 style={{ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.3, flex: 1, paddingRight: 8 }}>{role.title}</h4>
+                        <ChevronRight size={16} color="var(--text-muted)" />
+                      </div>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 2 }}>CANDIDATES</div>
+                          <div style={{ fontWeight: 700, color: 'var(--accent-blue-light)' }}>{role.totalCandidates}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 2 }}>AVG SCORE</div>
+                          <div style={{ fontWeight: 700, color: getScoreColor(role.avgScore) }}>{role.avgScore ? `${role.avgScore}%` : '—'}</div>
+                        </div>
+                        {role.candidates[0] && (
+                          <div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 2 }}>TOP</div>
+                            <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              🥇 {role.candidates[0].name?.split(' ')[0]}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Top performers */}
             <div className="chart-card">
               <div className="chart-header">
-                <div className="chart-title">Top Performers</div>
+                <div className="chart-title">Recent Top Performers</div>
                 <Award size={18} color="var(--accent-orange)" />
               </div>
               {analytics?.recentSessions?.slice(0, 5).map((s, i) => (
                 <div key={s._id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : i === 2 ? '#a87c5b' : 'var(--bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: getMedalColor(i + 1), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: i < 3 ? '#000' : 'var(--text-primary)' }}>
                     {i + 1}
                   </div>
                   <div className="avatar">{s.candidate?.name?.[0]}</div>
@@ -114,12 +230,12 @@ export default function RecruiterAnalytics() {
                     <div style={{ fontWeight: 500 }}>{s.candidate?.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{s.interview?.title}</div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: s.overallScore >= 70 ? 'var(--accent-green)' : 'var(--accent-orange)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: getScoreColor(s.overallScore) }}>
                     {s.overallScore}%
                   </div>
                 </div>
               ))}
-              {(!analytics?.recentSessions?.length) && (
+              {!analytics?.recentSessions?.length && (
                 <div className="empty-state"><p>No data yet. Run some interviews first.</p></div>
               )}
             </div>

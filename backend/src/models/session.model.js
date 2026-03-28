@@ -27,6 +27,7 @@ const sessionSchema = new mongoose.Schema({
   questions: [mongoose.Schema.Types.Mixed],
   rank: Number,
   reportUrl: String,
+  resumeSnapshot: { type: String, default: '' },
   currentQuestionIndex: { type: Number, default: 0 },
   socketRoomId: String,
 }, { timestamps: true });

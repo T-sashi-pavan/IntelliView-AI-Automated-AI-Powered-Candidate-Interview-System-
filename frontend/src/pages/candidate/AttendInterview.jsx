@@ -30,15 +30,15 @@ export default function AttendInterview() {
   const handleStart = async () => {
     setStarting(true);
     try {
-      const linkCode = link.includes('link=') ? link.split('link=')[1] : link.trim();
-      const res = await api.post('/candidates/start', { interviewLink: linkCode });
+      const res = await api.post('/candidates/start-real', { interviewId: interview._id });
       toast.success('Interview starting...');
-      navigate(`/candidate/interview/${res.data.session._id}`);
+      navigate(`/candidate/real-interview/${res.data.session._id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to start interview');
     }
     setStarting(false);
   };
+
 
   return (
     <DashboardLayout role="candidate" title="Attend Interview" subtitle="Enter your interview link to begin">

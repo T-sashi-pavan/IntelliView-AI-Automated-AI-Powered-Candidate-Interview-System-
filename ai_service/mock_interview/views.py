@@ -160,8 +160,10 @@ class SubmitAnswerView(APIView):
             client = Groq(api_key=settings.GROQ_API_KEY)
             
             # Identify if we are in the Wrap-Up/Feedback phase where scores shouldn't technically count
+            # Use the question's own order to determine if it's a technical or wrap-up question.
+            # Wrap-up only applies when the question being answered was created AFTER the total_questions limit.
             current_count = session.questions.count()
-            is_wrapup_phase = current_count >= session.total_questions
+            is_wrapup_phase = question.order > session.total_questions
 
             if not answer_text.strip() or answer_text.strip().lower() == "no response provided.":
                 eval_res = {
@@ -213,7 +215,31 @@ Return JSON:
             
             # Determine if we should generate the next adaptive technical question
             if not is_wrapup_phase:
-                # ADAPTIVE TECHNICAL QUESTION GENERATION
+                # Check if THIS was the last technical question (order == total_questions)
+                if question.order >= session.total_questions:
+                    # Transition to wrap-up
+                    transition_prompt = f"""The technical portion of the mock interview for {session.job_role} is now complete.
+Provide a natural, professional transition message acknowledging the end of technical questions.
+Then ask for the candidate's feedback on the experience and if they have any questions for the 'interviewer' about the role or company.
+Avoid a generic list format; keep it conversational and friendly.
+
+Return JSON: {{"question": "Transition and initial wrap-up question here"}}
+"""
+                    trans_comp = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[{"role": "user", "content": transition_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    wrapup_text = json.loads(trans_comp.choices[0].message.content).get('question', 'That concludes our technical discussion. How did you find the experience, and do you have any questions for me?')
+                    
+                    new_q = MockQuestion.objects.create(
+                        session=session,
+                        question_text=wrapup_text,
+                        order=current_count + 1
+                    )
+                    return Response({'success': True, 'nextQuestion': {'id': new_q.id, 'text': new_q.question_text}, 'completed': False})
+
+                # ADAPTIVE TECHNICAL QUESTION GENERATION (more questions remain)
                 prev_q_a = session.questions.filter(is_answered=True).order_by('order')
                 history = "\n".join([f"Q: {q.question_text}\nA: {q.answer_text}\nQuality: {q.level}" for q in prev_q_a])
                 
@@ -246,33 +272,6 @@ Return JSON: {{"question": "Next question here"}}
                 new_q = MockQuestion.objects.create(
                     session=session,
                     question_text=next_question_text,
-                    order=current_count + 1
-                )
-                return Response({'success': True, 'nextQuestion': {'id': new_q.id, 'text': new_q.question_text}, 'completed': False})
-
-            # Check if we were already in the wrap-up/feedback phase
-            # If current_count >= total_questions, any new question is a wrap-up question.
-            is_wrapup_phase = current_count >= session.total_questions
-            
-            # If we just finished the last technical question, initiate transition to wrap-up
-            if is_wrapup_phase and current_count == session.total_questions:
-                transition_prompt = f"""The technical portion of the mock interview for {session.job_role} is now complete.
-Provide a natural, professional transition message acknowledging the end of technical questions.
-Then ask for the candidate's feedback on the experience and if they have any questions for the 'interviewer' about the role or company.
-Avoid a generic list format; keep it conversational and friendly.
-
-Return JSON: {{"question": "Transition and initial wrap-up question here"}}
-"""
-                trans_comp = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": transition_prompt}],
-                    response_format={"type": "json_object"}
-                )
-                wrapup_text = json.loads(trans_comp.choices[0].message.content).get('question', 'That concludes our technical discussion. How did you find the experience, and do you have any questions for me?')
-                
-                new_q = MockQuestion.objects.create(
-                    session=session,
-                    question_text=wrapup_text,
                     order=current_count + 1
                 )
                 return Response({'success': True, 'nextQuestion': {'id': new_q.id, 'text': new_q.question_text}, 'completed': False})

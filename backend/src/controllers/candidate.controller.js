@@ -186,3 +186,74 @@ export const getAllCandidates = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+export const startRealInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.body;
+    const interview = await Interview.findById(interviewId);
+    if (!interview) return res.status(404).json({ success: false, message: 'Interview not found.' });
+
+    const candidate = await User.findById(req.user._id);
+    const resumeText = candidate.resumeText || '';
+
+    let session = await Session.findOne({ candidate: req.user._id, interview: interview._id });
+    if (session && session.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'You have already completed this interview.' });
+    }
+    if (!session) {
+      session = await Session.create({
+        candidate: req.user._id,
+        interview: interview._id,
+        recruiter: interview.recruiter,
+        status: 'in-progress',
+        startedAt: new Date(),
+        socketRoomId: `session_${interview._id}_${req.user._id}`,
+        questions: [{
+          text: "Please introduce yourself and walk me through your background and experience relevant to this role.",
+          type: "general",
+          expectedKeywords: interview.requiredSkills || [],
+          difficulty: "easy",
+          timeLimit: interview.timePerQuestion || 60,
+        }],
+        // store resume text for AI question generation
+        resumeSnapshot: resumeText,
+      });
+    }
+    return res.json({ success: true, session, interview, resumeText });
+  } catch (err) {
+    console.error('Start real interview error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+export const completeRealSession = async (req, res) => {
+  try {
+    const { sessionId, warnings = 0, aborted = false, abortReason = '' } = req.body;
+    const session = await Session.findById(sessionId).populate('interview');
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
+
+    session.status = 'completed';
+    session.completedAt = new Date();
+    if (aborted) {
+      session.aiFeedback = `Interview aborted due to security violations: ${abortReason}`;
+    }
+    await session.save();
+
+    const interview = await Interview.findById(session.interview._id);
+    if (interview) {
+      const currentCount = interview.totalCandidates || 0;
+      const currentAvg = interview.avgScore || 0;
+      interview.totalCandidates = currentCount + 1;
+      if (!aborted && session.overallScore > 0) {
+        interview.avgScore = Math.round(((currentAvg * currentCount) + session.overallScore) / (currentCount + 1));
+      }
+      await interview.save();
+    }
+
+    await User.findByIdAndUpdate(session.candidate, { $inc: { totalInterviewsAttended: 1 } });
+
+    return res.json({ success: true, session });
+  } catch (err) {
+    console.error('Complete real session error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};

@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 import { io } from 'socket.io-client';
 import {
   Mic, MicOff, Brain, Clock, CheckCircle,
@@ -231,6 +232,25 @@ export default function RealInterviewRoom() {
       const res = await window.fetch(`${DJANGO_URL}/api/mock/session/${sessionId}/feedback/?warnings=${warnings}`);
       const data = await res.json();
       setFinalReport(data);
+
+      // Convert Django's 0-10 score to 0-100 and save to MongoDB for recruiter leaderboard
+      const finalScore100 = Math.round(((data.finalScore || 0) / 10) * 100);
+      const mongoSessionId = sessionStorage.getItem('realInterview_mongoId');
+      if (mongoSessionId) {
+        try {
+          await api.post('/candidates/complete-real', {
+            sessionId: mongoSessionId,
+            overallScore: finalScore100,
+            aborted: malpractice,
+            warnings,
+            abortReason: malpractice ? 'Security violations exceeded limit' : '',
+          });
+          sessionStorage.removeItem('realInterview_mongoId');
+          sessionStorage.removeItem('realInterview_interviewId');
+        } catch (e) {
+          console.warn('Could not save score to recruiter leaderboard:', e.message);
+        }
+      }
     } catch (e) {
       console.error('Report error:', e);
     } finally {

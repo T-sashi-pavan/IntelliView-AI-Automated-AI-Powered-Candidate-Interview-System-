@@ -1227,30 +1227,180 @@ tbody tr:hover td { background: rgba(255,255,255,0.02); }
 .animate-glow { animation: glow 2s ease infinite; }
 .animate-float { animation: float 3s ease-in-out infinite; }
 
-/* ============ RESPONSIVE ============ */
+/* ============ ORB HERO CLASSES ============ */
+.hero-section { position: relative; overflow: hidden; }
+.hero-orb-desktop { display: block; }
+
+/* ============ RESPONSIVE — TABLET 1024px ============ */
 @media (max-width: 1024px) {
   .charts-grid { grid-template-columns: 1fr; }
-  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: var(--space-xl); }
   .auth-left { display: none; }
   .auth-right { width: 100%; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-card { padding: var(--space-lg); }
+  /* Leaderboard table: allow horizontal scroll */
+  .table-wrapper { overflow-x: auto; }
+  table { min-width: 600px; }
+  /* hero orb smaller */
+  .hero-orb-desktop { width: 45% !important; opacity: 0.6 !important; }
 }
 
+/* ============ RESPONSIVE — TABLET 768px ============ */
 @media (max-width: 768px) {
-  :root { --sidebar-width: 0px; }
-  .page-content { margin-left: 0; }
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); width: 280px; }
-  .navbar-links { display: none; }
-  .hamburger { display: flex; }
-  .interview-room { grid-template-columns: 1fr; max-height: none; overflow: auto; }
-  .footer-grid { grid-template-columns: 1fr; }
-  .hero-actions { flex-direction: column; align-items: center; }
+  :root {
+    --sidebar-width: 0px;
+    --header-height: 56px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    transform: translateX(-260px);
+    width: 260px !important;
+    z-index: 200;
+    box-shadow: var(--shadow-lg);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .page-content { margin-left: 0 !important; }
+
+  /* Navbar */
+  .navbar-links { display: none !important; }
+  .hamburger { display: flex !important; }
+
+  /* Hero */
+  .hero-orb-desktop { display: none !important; }
+  .hero-content { text-align: center; padding: var(--space-2xl) var(--space-lg); }
+  .hero-actions { flex-direction: column; align-items: center; gap: var(--space-md); }
+  .hero-actions .btn { width: 100%; max-width: 320px; justify-content: center; }
+  .hero-stats { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+  .hero-badge { justify-content: center; }
+
+  /* Features grid */
+  .features-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Steps: stack */
+  .steps-grid { grid-template-columns: 1fr !important; }
+
+  /* Testimonials: 1 col */
+  .testimonials-grid { grid-template-columns: 1fr !important; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+  .stat-value { font-size: 1.8rem; }
+
+  /* Charts */
+  .charts-grid { grid-template-columns: 1fr; gap: var(--space-md); }
+  .chart-card { padding: var(--space-md); }
+
+  /* Dashboard */
+  .dashboard-page { padding: var(--space-md); }
+
+  /* Footer */
+  .footer-grid { grid-template-columns: 1fr; gap: var(--space-xl); }
+  .footer-bottom { flex-direction: column; text-align: center; gap: var(--space-sm); }
+
+  /* Interview room: stack vertically */
+  .interview-room {
+    grid-template-columns: 1fr;
+    max-height: none;
+    overflow: auto;
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  /* Auth */
+  .auth-right { width: 100%; padding: var(--space-xl) var(--space-lg); }
+  .auth-form-container { max-width: 100%; }
+
+  /* Modal */
+  .modal-content { padding: var(--space-xl) var(--space-lg); margin: var(--space-md); }
+
+  /* Topbar */
+  .topbar { padding: 0 var(--space-md); }
+  .topbar-right { gap: var(--space-sm); }
+
+  /* grid-2 stack */
+  .grid-2 { grid-template-columns: 1fr !important; }
+  .grid-3 { grid-template-columns: 1fr 1fr !important; }
+
+  /* Table: scroll */
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 580px; }
+  thead th,
+  tbody td { padding: var(--space-sm) var(--space-md); font-size: 0.8rem; }
+
+  /* Attend interview page details grid */
+  .glass-card [style*="grid-template-columns: repeat(3"] { 
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Analytics leaderboard grid */
+  [style*="repeat(auto-fill, minmax(280px"] {
+    grid-template-columns: 1fr !important;
+  }
 }
 
+/* ============ RESPONSIVE — MOBILE 480px ============ */
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-  .dashboard-page { padding: var(--space-md); }
-  .container { padding: 0 var(--space-md); }
+  /* Typography scale down */
+  h1 { font-size: clamp(1.6rem, 7vw, 2.4rem); }
+  h2 { font-size: clamp(1.25rem, 5vw, 1.8rem); }
+  h3 { font-size: clamp(1rem, 4vw, 1.3rem); }
+
+  /* Spacing */
+  .container { padding: 0 var(--space-sm); }
+  .dashboard-page { padding: var(--space-sm); }
+
+  /* Stats: 2 cols */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: var(--space-sm); }
+  .stat-card { padding: var(--space-md); }
+  .stat-value { font-size: 1.5rem; }
+  .stat-icon-wrapper { top: var(--space-md); right: var(--space-md); width: 32px; height: 32px; }
+
+  /* Features: 1 col on small phones */
+  .features-grid { grid-template-columns: 1fr !important; }
+
+  /* Grid helpers */
+  .grid-2 { grid-template-columns: 1fr !important; }
+  .grid-3 { grid-template-columns: 1fr !important; }
+
+  /* Hero stats: 2 col */
+  .hero-stats { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+  
+  /* Buttons: full width in hero */
+  .hero-actions .btn { padding: 12px 20px; font-size: 0.9rem; }
+
+  /* Attend interview stat cards */
+  [style*="gridTemplateColumns: 'repeat(3"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Toast: full width on mobile */
+  .toast-container { right: var(--space-sm); left: var(--space-sm); }
+
+  /* Filter bar: vertical */
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .search-input-wrapper { min-width: unset; }
+
+  /* Section padding */
+  .features-section,
+  .steps-section,
+  .testimonials-section { padding: var(--space-2xl) 0; }
+
+  /* Navbar: tight */
+  .navbar { padding: 0 var(--space-md); }
+  .navbar-logo span { font-size: 1rem; }
+
+  /* Modal: full width on small phones */
+  .modal-content { padding: var(--space-lg); border-radius: var(--radius-lg); }
+  .modal-overlay { padding: var(--space-sm); }
+
+  /* Interview proctoring camera: smaller on mobile */
+  body:not(.fullscreen-interview) video[style*="width: 220px"] {
+    width: 120px !important;
+    height: 80px !important;
+  }
 }
 
 /* ============ UTILITIES ============ */

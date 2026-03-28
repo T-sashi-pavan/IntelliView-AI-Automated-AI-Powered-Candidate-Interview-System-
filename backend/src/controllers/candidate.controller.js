@@ -227,12 +227,13 @@ export const startRealInterview = async (req, res) => {
 
 export const completeRealSession = async (req, res) => {
   try {
-    const { sessionId, warnings = 0, aborted = false, abortReason = '' } = req.body;
+    const { sessionId, warnings = 0, aborted = false, abortReason = '', overallScore = 0 } = req.body;
     const session = await Session.findById(sessionId).populate('interview');
     if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
 
     session.status = 'completed';
     session.completedAt = new Date();
+    session.overallScore = overallScore;
     if (aborted) {
       session.aiFeedback = `Interview aborted due to security violations: ${abortReason}`;
     }
@@ -243,8 +244,8 @@ export const completeRealSession = async (req, res) => {
       const currentCount = interview.totalCandidates || 0;
       const currentAvg = interview.avgScore || 0;
       interview.totalCandidates = currentCount + 1;
-      if (!aborted && session.overallScore > 0) {
-        interview.avgScore = Math.round(((currentAvg * currentCount) + session.overallScore) / (currentCount + 1));
+      if (!aborted && overallScore > 0) {
+        interview.avgScore = Math.round(((currentAvg * currentCount) + overallScore) / (currentCount + 1));
       }
       await interview.save();
     }

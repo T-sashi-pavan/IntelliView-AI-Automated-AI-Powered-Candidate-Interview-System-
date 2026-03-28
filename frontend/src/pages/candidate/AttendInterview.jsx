@@ -57,6 +57,19 @@ export default function AttendInterview() {
       const djangoData = await djangoRes.json();
       if (!djangoData.sessionId) throw new Error(djangoData.message || 'Failed to start AI session');
 
+      // 3. Also create/update a MongoDB Session so recruiter leaderboard works
+      let mongoSessionId = null;
+      try {
+        const nodeRes = await api.post('/candidates/start-real', { interviewId: interview._id });
+        mongoSessionId = nodeRes.data.session?._id;
+      } catch (e) {
+        console.warn('MongoDB session tracking unavailable:', e.message);
+      }
+
+      // 4. Store tracking IDs so RealInterviewRoom can update on completion
+      sessionStorage.setItem('realInterview_mongoId', mongoSessionId || '');
+      sessionStorage.setItem('realInterview_interviewId', interview._id);
+
       toast.success('Interview starting...');
       navigate(`/candidate/real-interview/${djangoData.sessionId}`);
     } catch (err) {

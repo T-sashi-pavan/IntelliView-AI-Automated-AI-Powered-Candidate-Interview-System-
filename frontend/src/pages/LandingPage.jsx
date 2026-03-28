@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import useAuthStore from '../store/authStore';
+import Orb from '../components/Orb';
 import {
   Brain, Zap, FileSearch, BarChart3, Mic, ChevronRight, Plus,
   Star, Shield, Clock, Users, ArrowRight, Menu, X,
@@ -93,7 +94,11 @@ export default function LandingPage() {
       <section className="hero-section">
         <div className="hero-bg" />
         <div className="hero-grid" />
-        <div className="hero-content animate-fade">
+        {/* Orb WebGL background animation */}
+        <div style={{ position: 'absolute', right: 0, top: 0, width: '55%', height: '100%', zIndex: 0, opacity: 0.85, pointerEvents: 'none' }} className="hero-orb-desktop">
+          <Orb hue={240} hoverIntensity={1.5} rotateOnHover={true} backgroundColor="#070b14" />
+        </div>
+        <div className="hero-content animate-fade" style={{ position: 'relative', zIndex: 1 }}>
           <div className="hero-badge">
             <Zap size={14} />
             Powered by Groq + Gemini AI

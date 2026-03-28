@@ -30,11 +30,37 @@ export default function AttendInterview() {
   const handleStart = async () => {
     setStarting(true);
     try {
-      const res = await api.post('/candidates/start-real', { interviewId: interview._id });
+      // 1. Fetch candidate's profile resume from Node.js backend
+      let resumeText = '';
+      try {
+        const profileRes = await api.get('/users/profile');
+        resumeText = profileRes.data.user?.resumeText || '';
+      } catch (e) {
+        console.warn('Could not fetch profile resume:', e.message);
+      }
+
+      // 2. Start Django AI session with recruiter job details + candidate resume
+      const DJANGO_URL = import.meta.env.VITE_DJANGO_URL || 'http://localhost:8001';
+      const djangoRes = await fetch(`${DJANGO_URL}/api/mock/real/start/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobRole: interview.title,
+          jobDescription: interview.jobDescription || '',
+          experience: interview.experienceLevel || 'mid',
+          questions: interview.numberOfQuestions || 5,
+          timeLimit: interview.timePerQuestion || 180,
+          requiredSkills: interview.requiredSkills || [],
+          resumeText,
+        }),
+      });
+      const djangoData = await djangoRes.json();
+      if (!djangoData.sessionId) throw new Error(djangoData.message || 'Failed to start AI session');
+
       toast.success('Interview starting...');
-      navigate(`/candidate/real-interview/${res.data.session._id}`);
+      navigate(`/candidate/real-interview/${djangoData.sessionId}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to start interview');
+      toast.error(err.message || 'Failed to start interview');
     }
     setStarting(false);
   };

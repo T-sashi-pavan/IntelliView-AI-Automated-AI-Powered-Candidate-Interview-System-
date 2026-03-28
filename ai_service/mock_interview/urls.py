@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     StartMockInterviewView, SubmitAnswerView, GetSessionView, 
     SuggestRoleView, GenerateFinalMockFeedbackView, WhisperTranscriptionView,
-    ElevenLabsTTSView, MockHistoryView
+    ElevenLabsTTSView, MockHistoryView, StartRealInterviewView
 )
 
 urlpatterns = [
@@ -14,4 +14,5 @@ urlpatterns = [
     path('asr/whisper/', WhisperTranscriptionView.as_view(), name='whisper_transcribe'),
     path('tts/elevenlabs/', ElevenLabsTTSView.as_view(), name='elevenlabs_tts'),
     path('history/', MockHistoryView.as_view(), name='mock_history'),
+    path('real/start/', StartRealInterviewView.as_view(), name='start_real_interview'),
 ]

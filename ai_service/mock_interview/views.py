@@ -148,7 +148,56 @@ class GetSessionView(APIView):
         except MockSession.DoesNotExist:
             return Response({'message': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
+class StartRealInterviewView(APIView):
+    """Start a real recruiter interview session using JSON body (resume already in DB)."""
+    def post(self, request):
+        job_role = request.data.get('jobRole', '')
+        job_description = request.data.get('jobDescription', '')
+        experience = request.data.get('experience', 'mid')
+        questions_count = int(request.data.get('questions', 5))
+        time_limit = int(request.data.get('timeLimit', 180))
+        resume_text = request.data.get('resumeText', '')
+        required_skills = request.data.get('requiredSkills', [])
+
+        if not job_role:
+            return Response({'message': 'Missing job role'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Build enriched resume context for question generation
+        skills_str = ', '.join(required_skills) if required_skills else ''
+        enriched_context = f"""
+Job Role: {job_role}
+Job Description: {job_description[:500]}
+Required Skills: {skills_str}
+Experience Level: {experience}
+Candidate Resume:
+{resume_text[:2000] if resume_text else 'No resume provided. Ask general role-related questions.'}
+"""
+
+        session = MockSession.objects.create(
+            job_role=job_role,
+            experience_level=experience,
+            total_questions=questions_count,
+            time_per_question=time_limit,
+            voice_id='MmiGAbOYCaIFzgNItUWa',
+            resume_text=enriched_context
+        )
+
+        first_question = f"Welcome! I am your AI interviewer for the {job_role} position. To begin, could you please introduce yourself and walk me through your background as it relates to this role?"
+        
+        MockQuestion.objects.create(
+            session=session,
+            question_text=first_question,
+            order=1
+        )
+        
+        return Response({
+            'sessionId': str(session.id),
+            'firstQuestion': first_question,
+            'message': 'Real Interview Session Started'
+        })
+
 class SubmitAnswerView(APIView):
+
     def post(self, request, session_id):
         try:
             session = MockSession.objects.get(id=session_id)
